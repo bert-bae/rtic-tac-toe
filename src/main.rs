@@ -11,9 +11,6 @@ struct Game {
 }
 
 static BOARD_WIDTH: usize = 9 * 3;
-
-// https://mathworld.wolfram.com/MagicSquare.html
-static MAGIC_SQUARE: [[u8; 3]; 3] = [[8, 1, 6], [3, 5, 7], [4, 9, 2]];
 impl Game {
     fn new(tiles: [[Tile; 3]; 3], players: (String, String)) -> Self {
         Game {
@@ -31,22 +28,23 @@ impl Game {
         );
         let mut complete = false;
         while !complete {
-            let valid = self.validate();
-            if valid {
-                complete = true;
-            } else {
-                self.draw();
+            self.draw();
 
-                let _ = stdout().flush();
-                let mut tile = String::new();
+            let _ = stdout().flush();
+            let mut tile = String::new();
 
-                println!("It's {}'s turn...", self.get_current_player());
-                stdin().read_line(&mut tile).unwrap();
+            println!("It's {}'s turn...", self.get_current_player());
+            stdin().read_line(&mut tile).unwrap();
 
-                match self.select_tile(&tile.trim()) {
-                    Ok(_) => self.next(),
-                    Err(e) => println!("Invalid selection: {e}"),
+            match self.select_tile(&tile.trim()) {
+                Ok(_) => {
+                    println!("What is validation? {}", self.validate());
+                    if self.validate() {
+                        complete = true;
+                    }
+                    self.next();
                 }
+                Err(e) => println!("Invalid selection: {e}"),
             }
         }
     }
@@ -86,6 +84,12 @@ impl Game {
     }
 
     fn validate(&self) -> bool {
+        let sym = if self.next.unwrap() == 0 {
+            TileState::X
+        } else {
+            TileState::O
+        };
+        
         return false;
     }
 
@@ -104,27 +108,30 @@ impl Game {
             Some(1) => 0,
             Some(_) => 0,
         };
-
         self.next = Some(next_player);
     }
 
-    fn select_tile(&mut self, key: &str) -> Result<bool, &str> {
+    fn select_tile(&mut self, key: &str) -> Result<bool, String> {
         for row in self.board.iter_mut() {
             let position = row.iter().position(|t| t.get_key() == key);
             if position.is_some() {
                 let player = self.next.unwrap();
+                println!("player  {player:?}");
                 let state = if player == 0 {
                     TileState::X
                 } else {
                     TileState::O
                 };
-                let _ = match row[position.unwrap()].set_state(state) {
-                    Ok(_) => Ok(true),
-                    Err(_) => Err("This tile is already in use"),
-                };
+
+                if position.is_some() {
+                    match row[position.unwrap()].set_state(state) {
+                       Ok(_) => return Ok(true),
+                       Err(e) => return Err(e.to_string())
+                    }
+                } 
             }
         }
-        Err("Out of bounds")
+        Err(String::from("Out of bounds"))
     }
 }
 
