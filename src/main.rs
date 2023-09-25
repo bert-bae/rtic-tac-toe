@@ -83,12 +83,22 @@ impl Game {
         self.next = Some(next_player);
     }
 
-    pub fn validate_tile(&self, key: &str) -> Result<bool, &str> {
-        let contains = self.board.iter().any(|t| t.get_key() == key);
-        if contains {
-            Ok(true)
-        } else {
-            Err("Tile is out of bounds")
+    pub fn select_tile(&mut self, key: &str) -> Result<bool, &str> {
+        let position = self.board.iter().position(|t| t.get_key() == key);
+        match position {
+            Some(pos) => {
+                let player = self.next.unwrap();
+                let state = if player == 0 {
+                    TileState::X
+                } else {
+                    TileState::O
+                };
+                match self.board[pos].set_state(state) {
+                    Ok(_) => Ok(true),
+                    Err(_) => Err("This tile is already in use"),
+                }
+            }
+            None => Err("Tile is out of bounds"),
         }
     }
 }
@@ -127,7 +137,7 @@ fn start_game() {
             println!("It's {}'s turn...", game.get_current_player());
             stdin().read_line(&mut tile).unwrap();
 
-            match game.validate_tile(&tile.trim()) {
+            match game.select_tile(&tile.trim()) {
                 Ok(_) => game.next(),
                 Err(_) => println!("Tile {tile} is out of bounds"),
             }

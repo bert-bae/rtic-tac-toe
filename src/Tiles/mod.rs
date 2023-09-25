@@ -38,12 +38,12 @@ impl Tile {
         }
     }
 
-    pub fn set_state(&mut self, owner: TileState) -> Result<&Tile, TileError> {
+    pub fn set_state(&mut self, state: TileState) -> Result<&Tile, TileError> {
         if self.state != TileState::Empty {
             return Err(TileError::TileInUse(self.key.clone()));
         }
 
-        self.state = owner;
+        self.state = state;
         return Ok(self);
     }
 
