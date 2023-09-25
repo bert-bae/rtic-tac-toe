@@ -1,14 +1,13 @@
+use derive_more::Display;
 use thiserror::{self, Error};
 
 #[derive(Debug, Error)]
-enum TileError {
+pub enum TileError {
     #[error("Tile {0} is already in use.")]
     TileInUse(String),
-    #[error("The position {0} is out of bounds")]
-    OutOfBounds(String),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Display, PartialEq)]
 pub enum TileState {
     Empty,
     X,
@@ -36,5 +35,9 @@ impl Tile {
 
         self.state = owner;
         return Ok(self);
+    }
+
+    pub fn get_owner(&self) -> &TileState {
+        return &self.state;
     }
 }
