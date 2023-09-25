@@ -1,19 +1,21 @@
 mod Tiles;
-use Tiles::TileError;
 
 use crate::Tiles::{Tile, TileState};
 use std::io::{stdin, stdout, Write};
 
 #[derive(Debug)]
 struct Game {
-    board: [Tile; 9],
+    board: [[Tile; 3]; 3],
     players: (String, String),
     next: Option<u8>,
 }
 
 static BOARD_WIDTH: usize = 9 * 3;
+
+// https://mathworld.wolfram.com/MagicSquare.html
+static MAGIC_SQUARE: [[u8; 3]; 3] = [[8, 1, 6], [3, 5, 7], [4, 9, 2]];
 impl Game {
-    fn new(tiles: [Tile; 9], players: (String, String)) -> Self {
+    fn new(tiles: [[Tile; 3]; 3], players: (String, String)) -> Self {
         Game {
             board: tiles,
             players,
@@ -49,36 +51,32 @@ impl Game {
         }
     }
     fn draw_into(&self, buffer: &mut dyn std::fmt::Write) {
-        let mut row_counter = 0;
         let column_width = 7;
         writeln!(buffer, "").unwrap();
-        writeln!(buffer, "--{:-^BOARD_WIDTH$}--", "").unwrap();
-        for tile in &self.board {
-            let state = match tile.get_state() {
-                TileState::Empty => "Empty",
-                TileState::X => "X",
-                TileState::O => "O",
-            };
+        for row in &self.board {
+            writeln!(buffer, "--{:-^BOARD_WIDTH$}--", "").unwrap();
+            for tile in row {
+                let state = match tile.get_state() {
+                    TileState::Empty => "Empty",
+                    TileState::X => "X",
+                    TileState::O => "O",
+                };
 
-            write!(
-                buffer,
-                "| {:^column_width$} ",
-                if state == "Empty" {
-                    tile.get_key()
-                } else {
-                    state
-                }
-            )
-            .unwrap();
-
-            if row_counter > 1 {
-                write!(buffer, "|\n").unwrap();
-                writeln!(buffer, "--{:-^BOARD_WIDTH$}--", "").unwrap();
-                row_counter = 0;
-                continue;
+                write!(
+                    buffer,
+                    "| {:^column_width$} ",
+                    if state == "Empty" {
+                        tile.get_key()
+                    } else {
+                        state
+                    }
+                )
+                .unwrap();
             }
-            row_counter += 1;
+            write!(buffer, "|").unwrap();
+            writeln!(buffer, "").unwrap();
         }
+        writeln!(buffer, "--{:-^BOARD_WIDTH$}--", "").unwrap();
     }
 
     fn draw(&self) {
@@ -111,28 +109,43 @@ impl Game {
     }
 
     fn select_tile(&mut self, key: &str) -> Result<bool, &str> {
-        let position = self.board.iter().position(|t| t.get_key() == key);
-        match position {
-            Some(pos) => {
+        for row in self.board.iter_mut() {
+            let position = row.iter().position(|t| t.get_key() == key);
+            if position.is_some() {
                 let player = self.next.unwrap();
                 let state = if player == 0 {
                     TileState::X
                 } else {
                     TileState::O
                 };
-                match self.board[pos].set_state(state) {
+                let _ = match row[position.unwrap()].set_state(state) {
                     Ok(_) => Ok(true),
                     Err(_) => Err("This tile is already in use"),
-                }
+                };
             }
-            None => Err("Tile is out of bounds"),
         }
+        Err("Out of bounds")
     }
 }
 
 fn main() {
-    let tile_keys = ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "c2", "c3"];
-    let tiles = tile_keys.map(|key| Tile::new(key.to_string()));
+    let tiles = [
+        [
+            Tile::new("a1".to_string()),
+            Tile::new("a2".to_string()),
+            Tile::new("a3".to_string()),
+        ],
+        [
+            Tile::new("b1".to_string()),
+            Tile::new("b2".to_string()),
+            Tile::new("b3".to_string()),
+        ],
+        [
+            Tile::new("c1".to_string()),
+            Tile::new("c2".to_string()),
+            Tile::new("c3".to_string()),
+        ],
+    ];
 
     let players = (String::from("Player1"), String::from("Player2"));
 
