@@ -1,5 +1,5 @@
-use derive_more::Display;
 use thiserror::{self, Error};
+use std::fmt;
 
 #[derive(Debug, Error)]
 pub enum TileError {
@@ -7,11 +7,21 @@ pub enum TileError {
     TileInUse(String),
 }
 
-#[derive(Debug, Display, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum TileState {
     Empty,
     X,
-    Y,
+    O,
+}
+
+impl fmt::Display for TileState {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            TileState::Empty => write!(f, "Empty"),
+            TileState::X => write!(f, "X"),
+            TileState::O => write!(f, "O"),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -28,7 +38,7 @@ impl Tile {
         }
     }
 
-    pub fn set_owner(&mut self, owner: TileState) -> Result<&Tile, TileError> {
+    pub fn set_state(&mut self, owner: TileState) -> Result<&Tile, TileError> {
         if self.state != TileState::Empty {
             return Err(TileError::TileInUse(self.key.clone()));
         }
@@ -37,7 +47,11 @@ impl Tile {
         return Ok(self);
     }
 
-    pub fn get_owner(&self) -> &TileState {
+    pub fn get_state(&self) -> &TileState {
         return &self.state;
+    }
+
+    pub fn get_key(&self) -> &str {
+        return &self.key;
     }
 }
