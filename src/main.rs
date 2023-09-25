@@ -23,9 +23,9 @@ impl Game {
 
     fn draw_into(&self, buffer: &mut dyn std::fmt::Write) {
         let mut row_counter = 0;
-        let column_width = 6;
+        let column_width = 7;
         writeln!(buffer, "").unwrap();
-        writeln!(buffer, "-{:-^BOARD_WIDTH$}-", "").unwrap();
+        writeln!(buffer, "--{:-^BOARD_WIDTH$}--", "").unwrap();
         for tile in &self.board {
             let state = match tile.get_state() {
                 TileState::Empty => "Empty",
@@ -46,7 +46,7 @@ impl Game {
 
             if row_counter > 1 {
                 write!(buffer, "|\n").unwrap();
-                writeln!(buffer, "-{:-^BOARD_WIDTH$}-", "").unwrap();
+                writeln!(buffer, "--{:-^BOARD_WIDTH$}--", "").unwrap();
                 row_counter = 0;
                 continue;
             }
