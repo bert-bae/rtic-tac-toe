@@ -10,6 +10,11 @@ struct Game {
     next: Option<u8>,
 }
 
+enum GameResult {
+    Draw,
+    Win,
+}
+
 static WIN_CONDITIONS: [[(usize, usize); 3]; 8] = [
     [
         (0, 0),
@@ -65,26 +70,37 @@ impl Game {
 
     fn start(&mut self) {
         self.next();
-        println!("Lets start the game! {} goes first.", self.get_current_player());
-        let mut complete = false;
-        while !complete {
+        let current_player = self.get_current_player().clone();
+
+        println!("Lets start the game! {} goes first.", current_player);
+        let mut complete: Option<GameResult> = None;
+        while complete.is_none() {
             self.draw();
 
             let _ = stdout().flush();
             let mut tile = String::new();
 
-            println!("It's {}'s turn...", self.get_current_player());
+            println!("It's {}'s turn...", current_player.trim());
             stdin().read_line(&mut tile).unwrap();
 
             match self.select_tile(&tile.trim()) {
                 Ok(_) => {
-                    if self.validate() {
-                        complete = true;
+                    match self.validate() {
+                        Some(x) => {
+                            complete = Some(x);
+                        }
+                        None => (),
                     }
                     self.next();
                 }
                 Err(e) => println!("Invalid selection: {e}"),
             }
+        }
+
+        match complete {
+            Some(GameResult::Draw) => println!("It's a draw."),
+            Some(GameResult::Win) => println!("Player {current_player} is the winner!"),
+            None => (),
         }
     }
     fn draw_into(&self, buffer: &mut dyn std::fmt::Write) {
@@ -117,18 +133,29 @@ impl Game {
         println!("{buffer}");
     }
 
-    fn validate(&self) -> bool {
+    fn validate(&self) -> Option<GameResult> {
+        let mut available_tiles = false;
         let sym = if self.next.unwrap() == 0 { TileState::X } else { TileState::O };
         for condition in WIN_CONDITIONS {
             let winner = condition.iter().all(|(x, y)| {
-                let tile = &self.board[*x][*y];
+                let tile = &self.board[*x][*y] as &Tile;
+                if tile.get_state() == &TileState::Empty {
+                    available_tiles = true;
+                    return false;
+                }
+
                 return tile.get_state() == &sym;
             });
             if winner {
-                return true;
+                return Some(GameResult::Win);
             }
         }
-        return false;
+
+        if available_tiles {
+            return None;
+        }
+
+        return Some(GameResult::Draw);
     }
 
     fn get_current_player(&self) -> &String {
