@@ -1,7 +1,7 @@
-mod Tiles;
+mod tiles;
 
-use crate::Tiles::{Tile, TileState};
-use std::io::{stdin, stdout, Write};
+use crate::tiles::{ Tile, TileState };
+use std::io::{ stdin, stdout, Write };
 
 #[derive(Debug)]
 struct Game {
@@ -9,6 +9,49 @@ struct Game {
     players: (String, String),
     next: Option<u8>,
 }
+
+static WIN_CONDITIONS: [[(usize, usize); 3]; 8] = [
+    [
+        (0, 0),
+        (0, 1),
+        (0, 2),
+    ],
+    [
+        (1, 0),
+        (1, 1),
+        (1, 2),
+    ],
+    [
+        (2, 0),
+        (2, 1),
+        (2, 2),
+    ],
+    [
+        (0, 0),
+        (1, 0),
+        (2, 0),
+    ],
+    [
+        (0, 1),
+        (1, 1),
+        (2, 1),
+    ],
+    [
+        (0, 2),
+        (1, 2),
+        (2, 2),
+    ],
+    [
+        (0, 0),
+        (1, 1),
+        (2, 2),
+    ],
+    [
+        (0, 2),
+        (1, 1),
+        (2, 0),
+    ],
+];
 
 static BOARD_WIDTH: usize = 9 * 3;
 impl Game {
@@ -22,10 +65,7 @@ impl Game {
 
     fn start(&mut self) {
         self.next();
-        println!(
-            "Lets start the game! {} goes first.",
-            self.get_current_player()
-        );
+        println!("Lets start the game! {} goes first.", self.get_current_player());
         let mut complete = false;
         while !complete {
             self.draw();
@@ -38,7 +78,6 @@ impl Game {
 
             match self.select_tile(&tile.trim()) {
                 Ok(_) => {
-                    println!("What is validation? {}", self.validate());
                     if self.validate() {
                         complete = true;
                     }
@@ -60,16 +99,11 @@ impl Game {
                     TileState::O => "O",
                 };
 
-                write!(
-                    buffer,
-                    "| {:^column_width$} ",
-                    if state == "Empty" {
-                        tile.get_key()
-                    } else {
-                        state
-                    }
-                )
-                .unwrap();
+                write!(buffer, "| {:^column_width$} ", if state == "Empty" {
+                    tile.get_key()
+                } else {
+                    state
+                }).unwrap();
             }
             write!(buffer, "|").unwrap();
             writeln!(buffer, "").unwrap();
@@ -84,12 +118,16 @@ impl Game {
     }
 
     fn validate(&self) -> bool {
-        let sym = if self.next.unwrap() == 0 {
-            TileState::X
-        } else {
-            TileState::O
-        };
-        
+        let sym = if self.next.unwrap() == 0 { TileState::X } else { TileState::O };
+        for condition in WIN_CONDITIONS {
+            let winner = condition.iter().all(|(x, y)| {
+                let tile = &self.board[*x][*y];
+                return tile.get_state() == &sym;
+            });
+            if winner {
+                return true;
+            }
+        }
         return false;
     }
 
@@ -117,18 +155,18 @@ impl Game {
             if position.is_some() {
                 let player = self.next.unwrap();
                 println!("player  {player:?}");
-                let state = if player == 0 {
-                    TileState::X
-                } else {
-                    TileState::O
-                };
+                let state = if player == 0 { TileState::X } else { TileState::O };
 
                 if position.is_some() {
                     match row[position.unwrap()].set_state(state) {
-                       Ok(_) => return Ok(true),
-                       Err(e) => return Err(e.to_string())
+                        Ok(_) => {
+                            return Ok(true);
+                        }
+                        Err(e) => {
+                            return Err(e.to_string());
+                        }
                     }
-                } 
+                }
             }
         }
         Err(String::from("Out of bounds"))
@@ -137,24 +175,10 @@ impl Game {
 
 fn main() {
     let tiles = [
-        [
-            Tile::new("a1".to_string()),
-            Tile::new("a2".to_string()),
-            Tile::new("a3".to_string()),
-        ],
-        [
-            Tile::new("b1".to_string()),
-            Tile::new("b2".to_string()),
-            Tile::new("b3".to_string()),
-        ],
-        [
-            Tile::new("c1".to_string()),
-            Tile::new("c2".to_string()),
-            Tile::new("c3".to_string()),
-        ],
+        [Tile::new("a1".to_string()), Tile::new("a2".to_string()), Tile::new("a3".to_string())],
+        [Tile::new("b1".to_string()), Tile::new("b2".to_string()), Tile::new("b3".to_string())],
+        [Tile::new("c1".to_string()), Tile::new("c2".to_string()), Tile::new("c3".to_string())],
     ];
-
-    let players = (String::from("Player1"), String::from("Player2"));
 
     let mut p1 = String::new();
     let mut p2 = String::new();
@@ -166,6 +190,6 @@ fn main() {
     let _ = stdout().flush();
     stdin().read_line(&mut p2).unwrap();
 
-    let mut game = Game::new(tiles, players);
+    let mut game = Game::new(tiles, (p1, p2));
     game.start();
 }
